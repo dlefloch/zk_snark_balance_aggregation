@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/consensys/gnark/frontend"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -17,8 +18,8 @@ func logDurationSince(action string, startTime time.Time) {
 
 }
 
-// HashEthereumAddress hashes an Ethereum address using Keccak-256
-func HashEthereumAddress(address string) string {
+// hashEthereumAddress hashes an Ethereum address using Keccak-256
+func hashEthereumAddress(address string) string {
 	// Remove the "0x" prefix if it exists
 	address = strings.TrimPrefix(address, "0x")
 
@@ -34,8 +35,24 @@ func HashEthereumAddress(address string) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func HashToBigInt(hashHex string) *big.Int {
+func hashToBigInt(hashHex string) *big.Int {
 	hashInt := new(big.Int)
 	hashInt.SetString(hashHex, 16) // Convert hex string to *big.Int
 	return hashInt
+}
+
+// Example: Convert frontend.Variable to *big.Int
+func variableToBigInt(variable frontend.Variable) *big.Int {
+	switch v := variable.(type) {
+	case *big.Int:
+		return v // Directly return if already *big.Int
+	case int:
+		return big.NewInt(int64(v)) // Handle integers
+	case string:
+		// Attempt parsing if variable is string
+		result, _ := new(big.Int).SetString(v, 10)
+		return result
+	default:
+		panic("Unsupported type for conversion")
+	}
 }

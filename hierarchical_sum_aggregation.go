@@ -188,7 +188,7 @@ func (w *IndividualBalanceCircuit) Fill(nbPublic, nbSecret int, values <-chan an
 }
 
 type AggregatedBalanceCircuit struct {
-	Commitments     []frontend.Variable `gnark:"commitments,public"`
+	Commitments     []frontend.Variable `gnark:"commitments,private"`
 	TotalCommitment frontend.Variable   `gnark:"total_commitment,public"`
 }
 
@@ -240,7 +240,7 @@ func (w *AggregatedBalanceCircuit) UnmarshalBinary(data []byte) error {
 
 // Implement Public method
 func (w *AggregatedBalanceCircuit) Public() (witness.Witness, error) {
-	return &AggregatedBalanceCircuit{Commitments: w.Commitments, TotalCommitment: w.TotalCommitment}, nil
+	return &AggregatedBalanceCircuit{TotalCommitment: w.TotalCommitment}, nil
 }
 
 // Implement Vector method
