@@ -11,8 +11,8 @@ import (
 )
 
 type SumAggregationCircuit struct {
-	TotalSum frontend.Variable   `gnark:"total_sum,public"` // Aggregated total (public output)
 	Balances []frontend.Variable `gnark:"balances,secret"`  // User balances (private inputs)
+	TotalSum frontend.Variable   `gnark:"total_sum,public"` // Aggregated total (public output)
 }
 
 func (circuit *SumAggregationCircuit) Define(api frontend.API) error {
@@ -49,7 +49,7 @@ func (w *SumAggregationCircuit) ReadFrom(reader io.Reader) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return int64(1 + len(w.Balances)), nil
+	return int64(len(w.Balances) + 1), nil
 }
 
 // Implement encoding.BinaryMarshaler
@@ -69,7 +69,7 @@ func (w *SumAggregationCircuit) Public() (witness.Witness, error) {
 
 // Implement Vector method
 func (w *SumAggregationCircuit) Vector() any {
-	return append([]frontend.Variable{w.TotalSum}, w.Balances...)
+	return append(w.Balances, []frontend.Variable{w.TotalSum}...)
 }
 
 // Implement ToJSON method
@@ -84,18 +84,12 @@ func (w *SumAggregationCircuit) FromJSON(s *schema.Schema, data []byte) error {
 
 // Implement Fill method
 func (w *SumAggregationCircuit) Fill(nbPublic, nbSecret int, values <-chan any) error {
-	w.Balances = make([]frontend.Variable, nbSecret)
 
 	if nbPublic != 1 {
 		return errors.New("expected 1 public input")
 	}
 
-	v, ok := <-values
-	if !ok {
-		return errors.New("not enough values for public inputs")
-	}
-	w.TotalSum = v.(int)
-
+	w.Balances = make([]frontend.Variable, nbSecret)
 	for i := 0; i < nbSecret; i++ {
 		v, ok := <-values
 		if !ok {
@@ -103,6 +97,12 @@ func (w *SumAggregationCircuit) Fill(nbPublic, nbSecret int, values <-chan any) 
 		}
 		w.Balances[i] = v.(frontend.Variable)
 	}
+
+	v, ok := <-values
+	if !ok {
+		return errors.New("not enough values for public inputs")
+	}
+	w.TotalSum = v.(frontend.Variable)
 
 	return nil
 }
